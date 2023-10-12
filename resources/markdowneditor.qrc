@@ -1,0 +1,13 @@
+<RCC>
+    <qresource prefix="/">
+        <file>default.md</file>
+        <file>index.html</file>
+        <file>3rdparty/markdown.css</file>
+        <file>3rdparty/marked.js</file>
+        <file>3rdparty/tex-chtml.js</file>
+        <file>3rdparty/output/chtml/fonts/woff-v2/MathJax_Zero.woff</file>
+        <file>3rdparty/output/chtml/fonts/woff-v2/MathJax_Main-Regular.woff</file>
+        <file>3rdparty/output/chtml/fonts/woff-v2/MathJax_Math-Italic.woff</file>
+        <file>config.ini</file>
+    </qresource>
+</RCC>
