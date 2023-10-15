@@ -18,25 +18,25 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
 from PySide6.QtWidgets import (QApplication, QLabel, QLineEdit, QPushButton,
     QSizePolicy, QWidget)
 
-class Ui_SettingsWidget(object):
-    def setupUi(self, Settings):
-        if not Settings.objectName():
-            Settings.setObjectName(u"Settings")
-        Settings.resize(351, 203)
-        self.okButton = QPushButton(Settings)
+class Ui_SettingsWight(object):
+    def setupUi(self, SettingsWight):
+        if not SettingsWight.objectName():
+            SettingsWight.setObjectName(u"SettingsWight")
+        SettingsWight.resize(351, 203)
+        self.okButton = QPushButton(SettingsWight)
         self.okButton.setObjectName(u"okButton")
         self.okButton.setGeometry(QRect(90, 120, 181, 41))
-        self.lineEdit = QLineEdit(Settings)
+        self.lineEdit = QLineEdit(SettingsWight)
         self.lineEdit.setObjectName(u"lineEdit")
-        self.lineEdit.setGeometry(QRect(30, 30, 301, 41))
+        self.lineEdit.setGeometry(QRect(30, 40, 301, 31))
 
-        self.retranslateUi(Settings)
+        self.retranslateUi(SettingsWight)
 
-        QMetaObject.connectSlotsByName(Settings)
+        QMetaObject.connectSlotsByName(SettingsWight)
     # setupUi
 
-    def retranslateUi(self, Settings):
-        Settings.setWindowTitle(QCoreApplication.translate("SettingsWidget", u"Settings", None))
-        self.okButton.setText(QCoreApplication.translate("SettingsWidget", u"Ok", None))
+    def retranslateUi(self, SettingsWight):
+        SettingsWight.setWindowTitle(QCoreApplication.translate("SettingsWight", u"Settings", None))
+        self.okButton.setText(QCoreApplication.translate("SettingsWight", u"Ok", None))
     # retranslateUi
 

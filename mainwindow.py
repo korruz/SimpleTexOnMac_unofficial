@@ -1,18 +1,4 @@
-# Copyright (C) 2022 The Qt Company Ltd.
-# SPDX-License-Identifier: LicenseRef-Qt-Commercial OR BSD-3-Clause
-
-
-from PySide6.QtCore import (
-    QDir,
-    QFile,
-    QIODevice,
-    QUrl,
-    Qt,
-    Slot,
-    QTimer,
-    QMetaObject,
-    Signal,
-)
+from PySide6.QtCore import QDir, QFile, QIODevice, QUrl, Qt, Slot, QTimer, QMetaObject
 from PySide6.QtGui import QFontDatabase
 from PySide6.QtWebChannel import QWebChannel
 from PySide6.QtWidgets import (
@@ -24,6 +10,10 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtNetwork import (
     QNetworkReply,
+    QNetworkAccessManager,
+    QNetworkRequest,
+    QHttpMultiPart,
+    QHttpPart,
 )
 
 from mainwindow_ui import Ui_MainWindow
@@ -31,13 +21,10 @@ from document import Document
 from previewpage import PreviewPage
 from screenwidget import ScreenWidget
 from settingswidget import SettingsWidget
-import requests
 import json
 
 
 class MainWindow(QMainWindow):
-    signal_test = Signal(QNetworkReply)
-
     def __init__(self, parent=None):
         super().__init__(parent)
         self.m_file_path = ""
@@ -53,7 +40,7 @@ class MainWindow(QMainWindow):
 
         self._ui.editor.textChanged.connect(self.plainTextEditChanged)
 
-        self._ui.splitter.setStretchFactor(0, 5)
+        self._ui.splitter.setStretchFactor(0, 10)
         self._ui.splitter.setStretchFactor(1, 1)
 
         self._ui.captureButton.setFixedHeight(50)
@@ -80,99 +67,83 @@ class MainWindow(QMainWindow):
 
         self._ui.editor.setPlainText(data.data().decode("utf8"))
 
-        # self.settings_action = QAction("Settings", self)
-        # self.settings_action.triggered.connect(self.open_settings)
-        # self._ui.menu_File.addAction(self.settings_action)
+        self.token = SettingsWidget().token
 
-        # self._ui.capture_button.clicked.connect(self.onCapture)
-        # self._ui.copy_button.clicked.connect(self.onCopy)
+        self.networkManager = QNetworkAccessManager()
+        self.networkManager.finished.connect(self.on_finished)
+
+        self.multi_part = None  # 用于存储multi_part对象，保持其生命周期
+        self.file = None  # 用于存储file对象，保持其生命周期
+
         QMetaObject.connectSlotsByName(self)
 
     @Slot()
     def on_settingsButton_clicked(self):
         # 打开设置对话框或执行其他设置操作
-        self.label = SettingsWidget()
-        QTimer.singleShot(100, self.label.show)
+        self.settingsLabel = SettingsWidget()
+        QTimer.singleShot(100, self.settingsLabel.show)
 
     @Slot(str)
-    def requestApi(self, file_path: str):
+    def get_simpletex_data(self, file_path: str):
         """Request the simpletex api."""
+        self.screen_file_path = file_path
+        # 创建POST请求
+        url = QUrl("https://server.simpletex.cn/api/latex_ocr")
+        request = QNetworkRequest(url)
 
-        # self.file_path = file_path
-        # manager = QNetworkAccessManager()
-        # # https://server.simpletex.cn/api/latex_ocr
-        # api_url = QUrl("https://httpbingo.org/post")
-        # request = QNetworkRequest(api_url)
+        # 将 token 添加到请求头
+        self.token = SettingsWidget().token
+        request.setRawHeader(b"token", str(self.token).encode())
 
-        # multi_part = QHttpMultiPart(QHttpMultiPart.ContentType.FormDataType)
+        # 创建QHttpMultiPart对象
+        self.multi_part = QHttpMultiPart(QHttpMultiPart.ContentType.FormDataType)
 
-        # file_part = QHttpPart()
-        # file_part.setHeader(
-        #     QNetworkRequest.ContentDispositionHeader,
-        #     f'form-data; name="file"; filename="{file_path}"',
-        # )
-        # print("binggo")
-        # file = QFile(file_path)
-        # file.open(QIODevice.OpenModeFlag.ReadOnly)
-        # file_part.setBodyDevice(file)
-        # multi_part.append(file_part)
+        # 创建文件上传部分
+        file_part = QHttpPart()
+        file_part.setHeader(
+            QNetworkRequest.KnownHeaders.ContentDispositionHeader,
+            f'form-data; name="file"; filename="{self.screen_file_path}"',
+        )
+        self.file = QFile(self.screen_file_path)
+        self.file.open(QIODevice.OpenModeFlag.ReadOnly)
+        file_part.setBodyDevice(self.file)
+        self.multi_part.append(file_part)
 
-        # params = QUrlQuery()
-        # params.addQueryItem("token", str(self.label.token))
+        # 发送POST请求
+        reply = self.networkManager.post(request, self.multi_part)
+        # 在post请求后，保持multi_part对象的生命周期，直到请求完成
+        reply.finished.connect(self.clear_multi_part)
 
-        # for param in params.queryItems():
-        #     text_part = QHttpPart()
-        #     text_part.setHeader(
-        #         QNetworkRequest.KnownHeaders.ContentDispositionHeader,
-        #         f'form-data; name="{param[0]}"',
-        #     )
-        #     text_part.setBody(param[1].encode())
-        #     multi_part.append(text_part)
+    def clear_multi_part(self):
+        """清理multi_part和file对象, 在网络请求完成后调用"""
+        if self.multi_part:
+            self.multi_part.setParent(None)
+            self.multi_part = None
+        if self.file:
+            self.file.close()
+            self.file = None
 
-        # reply = manager.post(request, multi_part)
-        # reply.finished.connect(self.handle_response)
-
-        # # QTimer.singleShot(1000, self.handle_response)
-        # self.signal_test.connect(self.handle_response)
-        # self.signal_test.emit(reply)
-        # print("finished")
-
-        self.label = SettingsWidget()
-        api_url = "https://server.simpletex.cn/api/latex_ocr"
-        header = {"token": str(self.label.token)}
-        file = [("file", (file_path, open(file_path, "rb")))]
-        r = requests.post(api_url, files=file, headers=header)
-        print(r.status_code)
-        print(r.text)
-        result_path = file_path.replace("png", "json")
-        with open(result_path, "w", encoding="utf-8") as f:
-            json.dump(r.json(), f, indent=4)
-
-        self._ui.scoreSlider.setValue(eval(str(r.json()["res"]["conf"])) * 100)
-        self._ui.editor.setPlainText("$${}$$".format(r.json()["res"]["latex"]))
-
-    @Slot(QNetworkReply)
-    def handle_response(self, reply: QNetworkReply):
-        if reply.error() == QNetworkReply.NetworkError.NoError:
-            data = reply.readAll().data().decode()
-            print(data)
-
-            # 将结果保存为json文件
-            result_path = self.file_path.replace("png", "json")
-            with open(result_path, "w", encoding="utf-8") as f:
-                f.write(data)
+    def on_finished(self, response: QNetworkReply):
+        # Check if the request was successful
+        if response.error() == QNetworkReply.NoError:
+            content = response.readAll().data().decode("utf-8")
+            content = json.loads(content)
+            self.result_json_path = self.screen_file_path.replace(".png", ".json")
+            with open(self.result_json_path, "w") as f:
+                json.dump(content, f)
+            self._ui.scoreSlider.setValue(eval(str(content["res"]["conf"])) * 100)
+            self._ui.editor.setPlainText("$${}$$".format(content["res"]["latex"]))
         else:
-            print("Error:", reply.errorString())
+            print("Failed to fetch the web page. Error:", response.errorString())
 
-        # # 清理资源
-        reply.deleteLater()
+        response.deleteLater()
 
     @Slot()
     def on_captureButton_clicked(self):
         self.hide()
-        self.capture = ScreenWidget()
-        self.capture.signal_send_msg.connect(self.requestApi)
-        self.capture.accepted.connect(self.show)
+        self.capture = ScreenWidget(self)
+        self.capture.send_screen_path_signal.connect(self.get_simpletex_data)
+        # 延迟100ms显示截图窗口，避免被主窗口遮挡
         QTimer.singleShot(100, self.capture.show)
 
     @Slot()

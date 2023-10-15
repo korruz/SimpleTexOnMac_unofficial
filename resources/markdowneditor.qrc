@@ -8,6 +8,5 @@
         <file>3rdparty/output/chtml/fonts/woff-v2/MathJax_Zero.woff</file>
         <file>3rdparty/output/chtml/fonts/woff-v2/MathJax_Main-Regular.woff</file>
         <file>3rdparty/output/chtml/fonts/woff-v2/MathJax_Math-Italic.woff</file>
-        <file>config.ini</file>
     </qresource>
 </RCC>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>SettingsWidget</class>
- <widget class="QLabel" name="Settings">
+ <class>SettingsWight</class>
+ <widget class="QLabel" name="SettingsWight">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -30,9 +30,9 @@
    <property name="geometry">
     <rect>
      <x>30</x>
-     <y>30</y>
+     <y>40</y>
      <width>301</width>
-     <height>41</height>
+     <height>31</height>
     </rect>
    </property>
   </widget>

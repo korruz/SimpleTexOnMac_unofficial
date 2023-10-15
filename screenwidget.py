@@ -2,13 +2,11 @@ from PySide6.QtCore import (
     QSize,
     QPoint,
     Slot,
-    QMutex,
-    QMutexLocker,
     Qt,
     QDateTime,
     Signal,
 )
-from PySide6.QtWidgets import QMenu, QApplication, QDialog
+from PySide6.QtWidgets import QMenu, QApplication, QWidget
 from PySide6.QtGui import (
     QPixmap,
     QContextMenuEvent,
@@ -21,6 +19,10 @@ from PySide6.QtGui import (
 )
 from enum import Enum
 
+import os
+
+basedir = os.path.dirname(__file__)
+
 
 class STATUE(Enum):
     SElECT = 1
@@ -29,7 +31,7 @@ class STATUE(Enum):
 
 
 class Screen:
-    """Screen class."""
+    """截屏的屏幕"""
 
     def __init__(self, size: QSize):
         self.__left_up_point: QPoint
@@ -176,15 +178,16 @@ class Screen:
 STRDATETIME = QDateTime.currentDateTime().toString("yyyy-MM-dd-HH-mm-ss")
 
 
-class ScreenWidget(QDialog):
+class ScreenWidget(QWidget):
     """Screen widget class."""
 
-    signal_send_msg = Signal(str)
-    _instance = None
-    _mutex = QMutex()
+    send_screen_path_signal = Signal(str)
 
-    def __init__(self, parent=None) -> None:
-        super().__init__(parent)
+    def __init__(self, parent):
+        super().__init__()
+
+        # 保存对主窗口的引用
+        self.main_window = parent
 
         self.__menu: QMenu
         self.__screen: Screen
@@ -196,30 +199,18 @@ class ScreenWidget(QDialog):
 
         self.menu = QMenu(self)
         self.menu.addAction("Start OCR", self.saveScreen)
-        # self.menu.addAction("Save Full Screen", self.saveFullSreen)
-        # self.menu.addAction("Save Screen Other", self.saveScreenOther)
-        # self.menu.addAction("Save Full Screen Other", self.saveFullOther)
-        self.menu.addAction("Exit", self.quit)
+        self.menu.addAction("Exit", self.close)
 
         desktop_geometry = QApplication.primaryScreen().geometry()
-        desktop_geometry2 = QApplication.primaryScreen().availableGeometry()
 
         self.setGeometry(desktop_geometry)
         self.screen = Screen(desktop_geometry.size())
         self.full_screen = QPixmap()
 
-    def instance(self):
-        """Get the instance of ScreenWidgt."""
-        if self._instance is None:
-            with QMutexLocker(self._mutex):
-                if self._instance is None:
-                    self._instance = ScreenWidget()
-        return self._instance
-
-    @Slot()
-    def quit(self):
-        self.close()
-        self.accept()
+    def closeEvent(self, event):
+        # 重写窗口关闭事件，在此事件中使主窗口重新显示
+        self.main_window.show()
+        super().closeEvent(event)
 
     @property
     def menu(self) -> QMenu:
@@ -350,26 +341,9 @@ class ScreenWidget(QDialog):
         w = self.screen.right_down_point.x() - x
         h = self.screen.right_down_point.y() - y
 
-        # file_name = f"{QApplication.applicationDirPath()}/screen_{STRDATETIME}.png"
-        file_path = f"data/screen_{STRDATETIME}.png"
-        print(file_path)
+        os.makedirs(os.path.join(basedir, "data"), exist_ok=True)
+        file_path = f"data/screen/screen_{STRDATETIME}.png"
+        file_path = os.path.join(basedir, file_path)
         self.full_screen.copy(x, y, w, h).save(file_path, "png")
-        self.signal_send_msg.emit(file_path)
-        self.accept()
-
-    @Slot()
-    def saveFullSreen(self):
-        """Save the full screen."""
-        file_name = f"{QApplication.applicationDirPath()}/full_{STRDATETIME}.png"
-        self.full_screen.save(file_name, "png")
-        pass
-
-    @Slot()
-    def saveScreenOther(self):
-        """Save the screen other."""
-        pass
-
-    @Slot()
-    def saveFullOther(self):
-        """Save the full screen other."""
-        pass
+        self.send_screen_path_signal.emit(file_path)
+        self.close()

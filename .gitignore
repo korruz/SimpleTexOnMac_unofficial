@@ -161,4 +161,4 @@ cython_debug/
 
 # Custom
 test
-data
+data/screen
