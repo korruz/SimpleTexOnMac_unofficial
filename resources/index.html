@@ -5,6 +5,16 @@
 <head>
   <link rel="stylesheet" type="text/css" href="3rdparty/markdown.css">
   <script src="3rdparty/marked.js"></script>
+  <script type="text/javascript">
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']]
+      },
+      svg: {
+        fontCache: 'global'
+      }
+    };
+  </script>
   <script type="text/javascript" id="MathJax-script" src="3rdparty/tex-chtml.js">
   </script>
   <script src="qrc:/qtwebchannel/qwebchannel.js"></script>
